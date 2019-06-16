@@ -1,6 +1,5 @@
 package com.bgabrielma.work.realtime_chat_bgabrielma_master;
 
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.EditText;
@@ -10,18 +9,16 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.github.nkzawa.socketio.client.IO;
-import com.github.nkzawa.socketio.client.Socket;
-
-import java.net.URISyntaxException;
+import com.bgabrielma.work.tasks.SocketBuild;
+import com.github.nkzawa.emitter.Emitter;
 
 public class MainActivity extends AppCompatActivity {
 
     protected RecyclerView recyclerView;
+    protected SocketBuild socketBuild;
     RecyclerView.Adapter adapter;
     RecyclerView.LayoutManager manager;
     EditText chat;
-    private Socket mSocket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,21 +34,20 @@ public class MainActivity extends AppCompatActivity {
         this.recyclerView.setLayoutManager(manager);
         this.chat = findViewById(R.id.chat);
 
-        try {
-            mSocket = IO.socket(BuildConfig.SOCKET_IP);
-        }
-        catch (URISyntaxException e) {
-            Log.v("AvisActivity", "error connecting to socket");
-        }
+        // Interface emitter
+        Emitter.Listener listenerExample = args ->
+            this.runOnUiThread(() -> Log.e("Socket I/O error", "Cannot connect or reconnect!"));
 
-        Log.v("AvisActivity", "try to connect");
-        mSocket.connect();
-        Log.v("AvisActivity", "connection sucessful");
+        socketBuild = new SocketBuild(BuildConfig.SOCKET_IP);
+        socketBuild.setOnErrorListener(listenerExample);
+        socketBuild.setOnTimeOutListener(listenerExample);
+        socketBuild.startTaskConnection();
+
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mSocket.disconnect();
+        this.socketBuild.getSocket().close();
     }
 }
